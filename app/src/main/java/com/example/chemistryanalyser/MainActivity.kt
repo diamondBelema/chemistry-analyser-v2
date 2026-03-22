@@ -42,7 +42,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: TestViewModel) {
     val navController = rememberNavController()
@@ -50,15 +49,6 @@ fun MainScreen(viewModel: TestViewModel) {
     val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Chemistry Analyser") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            )
-        },
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(

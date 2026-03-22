@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.chemistryanalyser.ui.TestViewModel
+import com.example.chemistryanalyser.ui.components.EmptyState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,27 +50,33 @@ fun PatientScreen(viewModel: TestViewModel) {
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(patients) { patient ->
-                        ListItem(
-                            headlineContent = { Text(patient.name, fontWeight = FontWeight.Bold) },
-                            supportingContent = { Text("Age: ${patient.age} • ${patient.gender}") },
-                            leadingContent = {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                    shape = androidx.compose.foundation.shape.CircleShape,
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            patient.name.take(1).uppercase(),
-                                            style = MaterialTheme.typography.titleLarge,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
+                        Card(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            shape = MaterialTheme.shapes.extraLarge,
+                        ) {
+                            ListItem(
+                                headlineContent = { Text(patient.name, fontWeight = FontWeight.Bold) },
+                                supportingContent = { Text("Age: ${patient.age} • ${patient.gender}") },
+                                leadingContent = {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        shape = androidx.compose.foundation.shape.CircleShape,
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                patient.name.take(1).uppercase(),
+                                                style = MaterialTheme.typography.titleLarge,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                            )
+                                        }
                                     }
-                                }
-                            },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.padding(horizontal = 16.dp))
                     }
                 }
             }

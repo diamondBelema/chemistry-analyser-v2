@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.chemistryanalyser.ui.TestViewModel
+import com.example.chemistryanalyser.ui.components.EmptyState
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,7 +34,7 @@ fun ResultsScreen(viewModel: TestViewModel) {
 
         if (results.isEmpty()) {
             EmptyState(
-                icon = Icons.Default.Assignment,
+                icon = Icons.AutoMirrored.Filled.Assignment,
                 message = "No results found. Perform a test on the Home screen to see it here.",
                 modifier = Modifier.weight(1f)
             )

@@ -1,12 +1,12 @@
 package com.example.chemistryanalyser.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.chemistryanalyser.data.model.Test
 import com.example.chemistryanalyser.ui.TestViewModel
+import com.example.chemistryanalyser.ui.components.EmptyState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,43 +26,44 @@ fun TestsScreen(viewModel: TestViewModel) {
     var showAddSheet by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState()
+    val categories = tests.groupBy { it.category }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Test Configurations", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+            )
+        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { showAddSheet = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("New Test") },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                text = { Text("New Test") }
             )
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Text(
-                "Test Configurations",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
-
             if (tests.isEmpty()) {
                 EmptyState(
                     icon = Icons.Default.Science,
-                    message = "No tests configured yet. Create one to start analyzing.",
+                    message = "No tests configured yet.",
                     modifier = Modifier.weight(1f)
                 )
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(tests) { test ->
-                        TestListItem(
-                            test = test,
-                            onEdit = { showEditSheet = test }
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
+                LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
+                    categories.forEach { (category, testsInCategory) ->
+                        item {
+                            CategoryHeader(category)
+                        }
+                        items(testsInCategory) { test ->
+                            TestExpressiveCard(
+                                test = test,
+                                onEdit = { showEditSheet = test }
+                            )
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        item { Spacer(Modifier.height(16.dp)) }
                     }
                 }
             }
@@ -69,85 +71,75 @@ fun TestsScreen(viewModel: TestViewModel) {
     }
 
     if (showAddSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showAddSheet = false },
-            sheetState = sheetState
-        ) {
+        ModalBottomSheet(onDismissRequest = { showAddSheet = false }, sheetState = sheetState) {
             TestEditSheet(
                 title = "Create New Test",
                 onDismiss = { showAddSheet = false },
-                onConfirm = { newTest ->
-                    viewModel.addTest(newTest)
-                    showAddSheet = false
-                }
+                onConfirm = { viewModel.addTest(it); showAddSheet = false }
             )
         }
     }
 
     if (showEditSheet != null) {
-        ModalBottomSheet(
-            onDismissRequest = { showEditSheet = null },
-            sheetState = sheetState
-        ) {
+        ModalBottomSheet(onDismissRequest = { showEditSheet = null }, sheetState = sheetState) {
             TestEditSheet(
                 title = "Edit Configuration",
                 initialTest = showEditSheet,
                 onDismiss = { showEditSheet = null },
-                onConfirm = { updatedTest ->
-                    viewModel.addTest(updatedTest)
-                    showEditSheet = null
-                }
+                onConfirm = { viewModel.addTest(it); showEditSheet = null }
             )
         }
     }
 }
 
 @Composable
-fun TestListItem(test: Test, onEdit: () -> Unit) {
-    ListItem(
-        headlineContent = { 
-            Text(test.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium) 
-        },
-        supportingContent = { 
-            Column {
-                Text(
-                    "Standard: ${test.standardConcentration} conc @ ${test.standardAbsorbance} abs",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Text(
-                        "${test.optimalWavelength} nm",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-        },
-        leadingContent = {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Science, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-        },
-        trailingContent = {
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit Configuration")
-            }
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+fun CategoryHeader(name: String) {
+    Text(
+        text = name.uppercase(),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 12.dp, start = 8.dp)
     )
 }
 
+@Composable
+fun TestExpressiveCard(test: Test, onEdit: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+    ) {
+        ListItem(
+            headlineContent = { Text(test.name, fontWeight = FontWeight.Bold) },
+            supportingContent = {
+                Column {
+                    Text("Standard: ${test.standardConcentration} @ ${test.standardAbsorbance} abs")
+                    Text("Normal Range: ${test.minNormal} - ${test.maxNormal} ${test.unit}", color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            leadingContent = {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("${test.optimalWavelength}", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            },
+            trailingContent = {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = null)
+                }
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TestEditSheet(
     title: String,
@@ -156,71 +148,78 @@ fun TestEditSheet(
     onConfirm: (Test) -> Unit
 ) {
     var name by remember { mutableStateOf(initialTest?.name ?: "") }
+    var category by remember { mutableStateOf(initialTest?.category ?: "General") }
     var conc by remember { mutableStateOf(initialTest?.standardConcentration?.toString() ?: "") }
     var abs by remember { mutableStateOf(initialTest?.standardAbsorbance?.toString() ?: "") }
     var wave by remember { mutableStateOf(initialTest?.optimalWavelength?.toString() ?: "") }
+    var minN by remember { mutableStateOf(initialTest?.minNormal?.toString() ?: "") }
+    var maxN by remember { mutableStateOf(initialTest?.maxNormal?.toString() ?: "") }
+    var unit by remember { mutableStateOf(initialTest?.unit ?: "mg/dL") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-            .padding(bottom = 32.dp)
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(24.dp))
+        item { Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Test Name") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-        Spacer(Modifier.height(16.dp))
+        item { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Test Name") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) }
         
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            OutlinedTextField(
-                value = conc,
-                onValueChange = { conc = it },
-                label = { Text("Std. Conc") },
-                modifier = Modifier.weight(1f),
-                shape = MaterialTheme.shapes.large
-            )
-            OutlinedTextField(
-                value = abs,
-                onValueChange = { abs = it },
-                label = { Text("Std. Abs") },
-                modifier = Modifier.weight(1f),
-                shape = MaterialTheme.shapes.large
-            )
+        item { 
+            val categories = listOf("Lipid Profile", "Liver Function", "General", "Kidney Function")
+            Text("Category", style = MaterialTheme.typography.labelLarge)
+            FlowRow(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                categories.forEach { cat ->
+                    FilterChip(
+                        selected = category == cat,
+                        onClick = { category = cat },
+                        label = { Text(cat) }
+                    )
+                }
+            }
         }
-        Spacer(Modifier.height(16.dp))
         
-        OutlinedTextField(
-            value = wave,
-            onValueChange = { wave = it },
-            label = { Text("Optimal Wavelength (nm)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-        Spacer(Modifier.height(32.dp))
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(value = conc, onValueChange = { conc = it }, label = { Text("Std. Conc") }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large)
+                OutlinedTextField(value = abs, onValueChange = { abs = it }, label = { Text("Std. Abs") }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large)
+            }
+        }
+
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(value = minN, onValueChange = { minN = it }, label = { Text("Min Normal") }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large)
+                OutlinedTextField(value = maxN, onValueChange = { maxN = it }, label = { Text("Max Normal") }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large)
+            }
+        }
         
-        Button(
-            onClick = {
-                val test = Test(
-                    id = initialTest?.id ?: name.lowercase().replace(" ", "_"),
-                    name = name,
-                    standardConcentration = conc.toDoubleOrNull() ?: 0.0,
-                    standardAbsorbance = abs.toDoubleOrNull() ?: 1.0,
-                    optimalWavelength = wave.toIntOrNull() ?: 500,
-                    category = initialTest?.category ?: "Custom"
-                )
-                onConfirm(test)
-            },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = MaterialTheme.shapes.large
-        ) {
-            Text(if (initialTest == null) "Create Configuration" else "Save Changes")
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(value = wave, onValueChange = { wave = it }, label = { Text("Wavelength") }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large)
+                OutlinedTextField(value = unit, onValueChange = { unit = it }, label = { Text("Unit") }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large)
+            }
+        }
+        
+        item {
+            Button(
+                onClick = {
+                    val test = Test(
+                        id = initialTest?.id ?: name.lowercase().replace(" ", "_"),
+                        name = name,
+                        standardConcentration = conc.toDoubleOrNull() ?: 0.0,
+                        standardAbsorbance = abs.toDoubleOrNull() ?: 1.0,
+                        optimalWavelength = wave.toIntOrNull() ?: 500,
+                        category = category,
+                        minNormal = minN.toDoubleOrNull() ?: 0.0,
+                        maxNormal = maxN.toDoubleOrNull() ?: 0.0,
+                        unit = unit
+                    )
+                    onConfirm(test)
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Text("Save Configuration")
+            }
         }
     }
 }
