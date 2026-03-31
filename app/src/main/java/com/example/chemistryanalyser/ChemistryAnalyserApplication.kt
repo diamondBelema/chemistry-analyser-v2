@@ -11,24 +11,38 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.util.concurrent.TimeUnit
 
 class ChemistryAnalyserApplication : Application() {
-    val database by lazy { 
+
+    val database by lazy {
         Room.databaseBuilder(this, AppDatabase::class.java, "chemistry_analyser_db")
-            .build() 
+            .fallbackToDestructiveMigration()
+            .build()
     }
-    
+
     val repository by lazy {
         val moshi = Moshi.Builder()
             .addLast(KotlinJsonAdapterFactory())
             .build()
 
+        // FIX: Set explicit timeouts so connect() fails fast with an error
+        // instead of hanging the UI indefinitely when the ESP32 is unreachable.
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)   // fail quickly if ESP32 AP not found
+            .readTimeout(10, TimeUnit.SECONDS)      // allow sensor read time
+            .writeTimeout(5, TimeUnit.SECONDS)
+            .build()
+
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.4.1/") // Default ESP32 AP IP
+            .baseUrl("http://192.168.4.1/") // ESP32 SoftAP default IP
+            .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
+
         val apiService = retrofit.create(ApiService::class.java)
         TestRepository(database.testDao(), database.patientDao(), database.resultDao(), apiService)
     }
@@ -38,11 +52,9 @@ class ChemistryAnalyserApplication : Application() {
         val scope = CoroutineScope(SupervisorJob())
         scope.launch {
             val testDao = database.testDao()
-            // Check if tests already exist to avoid duplication
-            // For simplicity in this example, we just insert.
-            // In a real app, you'd check database count first.
-            Test.getDefaultTests().forEach {
-                testDao.insertTest(it)
+            // Only seed defaults if the table is empty — prevents duplicating tests on restart
+            if (testDao.getCount() == 0) {
+                Test.getDefaultTests().forEach { testDao.insertTest(it) }
             }
         }
     }

@@ -20,4 +20,7 @@ interface TestDao {
 
     @Query("SELECT * FROM tests WHERE id = :testId")
     suspend fun getTestById(testId: String): Test?
+
+    @Query("SELECT COUNT(*) FROM tests")
+    suspend fun getCount(): Int
 }

@@ -48,7 +48,7 @@ class TestViewModel(private val repository: TestRepository) : ViewModel() {
                 }
             } catch (e: Exception) {
                 _connectionState.value = ConnectionState.ERROR
-                _statusMessage.value = "Connection Failed"
+                _statusMessage.value = e.javaClass.simpleName + ": " + (e.message ?: "null")
             }
         }
     }
